@@ -1,31 +1,49 @@
 package de.tao.runner
 
-import de.tao.config.AppConfig
+import de.tao.config._
+
 import cats.Monad
 import cats.effect.IO
+import cats.effect.kernel.{Sync, Async, MonadCancelThrow}
+import cats.effect.std.{Console}
+import cats.Applicative
+import cats.MonadThrow
 
-trait Runner[F[_], A, K] {
-  def run(cfg: AppConfig, input: A): F[K]
+trait Runner[F[_], K] {
+  val runParams: Option[_ <: RunParams]
+  def run(): F[K]
 }
 
-class NoOpRunner[F[_]: Monad] extends Runner[F, Any, Unit] {
-  val F = implicitly[Monad[F]]
-  override def run(cfg: AppConfig, input: Any): F[Unit] = {
-    IO.println("NoOp runner")
-    F.pure({}) // taotodo right way to lift unit?
+abstract class NoOpRunner[F[_]: Sync] extends Runner[F, Unit] {
+  val console: Console[F]
+  override val runParams = None
+
+  override def run(): F[Unit] = {
+    console.println("Running NoOpRunner")
+  }
+}
+
+object NoOpRunner {
+  def make[F[_]: Sync](console: Console[F]): F[NoOpRunner[F]] = {
+    Applicative[F].pure(new NoOpRunner[F]{
+      override val console: Console[F] = console
+    })
   }
 }
 
 object Runner {
-  def make[F[_]: Monad](cfg: AppConfig): F[Runner[F, _, _]] = {
-    val F = implicitly[Monad[F]]
+  def make[F[_]: Async](cfg: AppConfig, console: Console[F]): F[Runner[F, _]] = {
     cfg.runMode match {
       case "process-csv" =>
-        F.pure(new ProcessCsvRunner[F, Unit, Unit]()) // taotodo take inputs
+        val runParams: Option[ProcessCSV] = cfg.runParams
+          .collect{ case p: ProcessCSV => p }
+          .headOption
+        ProcessCsvRunner.make[F, Iterable[String]](runParams, console)
 
       case _: String => 
-        IO.raiseError(new UnsupportedOperationException(s"Not recognised runner: ${cfg.runMode}"))
-        F.pure(new NoOpRunner[F])
+        // taotodo create sync loop
+        console.error(s"Unrecognised runner: ${cfg.runMode}")
+        NoOpRunner.make[F](console)
     }
   }
 }

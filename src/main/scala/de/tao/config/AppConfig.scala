@@ -10,6 +10,7 @@ import cats.effect.kernel.Sync
 import cats.data.{NonEmptyList}
 
 sealed trait RunParams
+object NoRunParams extends RunParams
 case class ProcessCSV(inputDir: String, outputDir: String, parallel: Option[Boolean]) extends RunParams
 
 case class AppConfig(
