@@ -14,8 +14,7 @@ trait Runner[F[_], K] {
   def run(): F[K]
 }
 
-abstract class NoOpRunner[F[_]: Sync] extends Runner[F, Unit] {
-  val console: Console[F]
+class NoOpRunner[F[_]: Sync](console: Console[F]) extends Runner[F, Unit] {
   override val runParams = None
 
   override def run(): F[Unit] = {
@@ -24,15 +23,14 @@ abstract class NoOpRunner[F[_]: Sync] extends Runner[F, Unit] {
 }
 
 object NoOpRunner {
-  def make[F[_]: Sync](console: Console[F]): F[NoOpRunner[F]] = {
-    Applicative[F].pure(new NoOpRunner[F]{
-      override val console: Console[F] = console
-    })
+  def make[F[_]: Sync](console: Console[F]): NoOpRunner[F] = {
+    new NoOpRunner(console)
   }
 }
 
 object Runner {
-  def make[F[_]: Async](cfg: AppConfig, console: Console[F]): F[Runner[F, _]] = {
+  // taotodo return type has to be Kleisi form? Runner[F, K]?
+  def make[F[_]: Async](cfg: AppConfig, console: Console[F]): Runner[F, _] = {
     cfg.runMode match {
       case "process-csv" =>
         val runParams: Option[ProcessCSV] = cfg.runParams

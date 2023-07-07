@@ -8,9 +8,11 @@ import cats.effect.std.Console
 
 object Main extends IOApp.Simple {
 
-  def run: IO[Unit] = for {
-    cfg <- AppConfig.make[IO]
-    console = Console.make[IO]
-    runner <- Runner.make[IO](cfg, console)
-  } yield runner.run()
+  def run: IO[Unit] = { 
+    for {
+      cfg <- AppConfig.make[IO]
+      console = Console.make[IO]
+      runner = Runner.make[IO](cfg, console)
+    } yield runner.run()
+  }
 }

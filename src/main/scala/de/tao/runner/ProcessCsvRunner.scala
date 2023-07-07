@@ -20,7 +20,7 @@ extends Runner[F, Iterable[K]] {
 }
 
 object ProcessCsvRunner {
-  def make[F[_]: Async, K](runParams: Option[ProcessCSV], console: Console[F]): F[ProcessCsvRunner[F, K]] = {
+  def make[F[_]: Async, K](runParams: Option[ProcessCSV], console: Console[F]): ProcessCsvRunner[F, K] = {
     // taotodo how to create Async Monad?
     ???
   }
