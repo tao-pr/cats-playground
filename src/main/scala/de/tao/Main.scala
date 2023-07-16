@@ -1,18 +1,42 @@
 package de.tao
 
+import de.tao.runner._
+import de.tao.config._
+import de.tao.common.Screen
+
+import cats.implicits._
 import cats.effect.IOApp
 import cats.effect.IO
-import de.tao.config.AppConfig
-import de.tao.runner.Runner
 import cats.effect.std.Console
+import cats.effect.ExitCode
+import cats.data.EitherT
 
-object Main extends IOApp.Simple {
+object Main extends IOApp {
 
-  def run: IO[Unit] = { 
-    for {
+  def run(args: List[String]): IO[ExitCode] = { 
+    val runnerT: EitherT[IO, Throwable, Runner[IO, _]] = EitherT(for {
       cfg <- AppConfig.make[IO]
       console = Console.make[IO]
-      runner = Runner.make[IO](cfg, console)
-    } yield runner.run()
+      _ <- Screen.cyan(s"Running mode: ${cfg.runMode}")(console)
+    } yield cfg.runMode match {
+      case "process-csv" =>
+        val runParams: Option[ProcessCSV] = cfg.runParams
+          .collect{ case p: ProcessCSV => p }
+          .headOption
+        ProcessCsvRunner.make[IO, Iterable[String]](runParams, console).asRight
+
+      case "pimc" =>
+        PiMC.make[IO](console).asRight
+
+      case _ =>
+        new UnsupportedOperationException(s"Unknown runner type: ${cfg.runMode}").asLeft[Runner[IO, _]]
+    })
+
+    runnerT.value.flatMap{
+      case Left(e) => 
+        IO.raiseError(e).map(_ => ExitCode.Error)
+      case Right(runner) => 
+        runner.run.as(ExitCode.Success)
+    }
   }
 }

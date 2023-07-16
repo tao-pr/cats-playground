@@ -21,6 +21,7 @@ case class AppConfig(
   def print: Unit = {
     val B = Console.BLUE
     val E = Console.RESET
+    // taotodo use Screen instead
     IO.println(s"${B}AppConfig: ${this}${E}")
   }
 }

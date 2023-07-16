@@ -7,7 +7,7 @@ import cats.Monad
 import cats.effect.kernel.Async
 import cats.effect.std.Console
 
-// taotodo: K should be serialisable
+// taotodo: convert to trait?
 class ProcessCsvRunner[F[_]: Monad, K](override val runParams: Option[ProcessCSV]) 
 extends Runner[F, Iterable[K]] {
 
@@ -20,7 +20,10 @@ extends Runner[F, Iterable[K]] {
 }
 
 object ProcessCsvRunner {
-  def make[F[_]: Async, K](runParams: Option[ProcessCSV], console: Console[F]): ProcessCsvRunner[F, K] = {
+  def make[F[_]: Async, K](
+    runParams: Option[ProcessCSV],
+    console: Console[F]
+  ): ProcessCsvRunner[F, K] = {
     // taotodo how to create Async Monad?
     ???
   }
