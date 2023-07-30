@@ -10,6 +10,7 @@ import cats.effect.IO
 import cats.effect.std.Console
 import cats.effect.ExitCode
 import cats.data.EitherT
+import cats.effect.kernel.Sync
 
 object Main extends IOApp {
 
@@ -26,7 +27,11 @@ object Main extends IOApp {
         ProcessCsvRunner.make[IO, Iterable[String]](runParams, console).asRight
 
       case "pimc" =>
-        PiMC.make[IO](console).asRight
+        implicit val runParams: Option[PiMC] = cfg.runParams
+          .collect{ case p: PiMC => p }
+          .headOption
+        implicit val sync = Sync[IO] // taotodo is this the right way to instantiate?
+        PiMCRunner.make[IO](runParams).asRight
 
       case _ =>
         new UnsupportedOperationException(s"Unknown runner type: ${cfg.runMode}").asLeft[Runner[IO, _]]
@@ -35,6 +40,7 @@ object Main extends IOApp {
     runnerT.value.flatMap{
       case Left(e) => 
         IO.raiseError(e).map(_ => ExitCode.Error)
+
       case Right(runner) => 
         runner.run.as(ExitCode.Success)
     }
