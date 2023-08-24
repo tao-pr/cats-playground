@@ -20,6 +20,12 @@ object Main extends IOApp {
       console = Console.make[IO]
       _ <- Screen.cyan(s"Running mode: ${cfg.runMode}")(console)
     } yield cfg.runMode match {
+      case "generate-csv" =>
+        val runParams: Option[GenerateCsv] = cfg.runParams
+          .collect{ case p: GenerateCsv => p }
+          .headOption
+        GenerateCsvRunner.make[IO](runParams).asRight
+
       case "process-csv" =>
         val runParams: Option[ProcessCSV] = cfg.runParams
           .collect{ case p: ProcessCSV => p }
@@ -27,10 +33,10 @@ object Main extends IOApp {
         ProcessCsvRunner.make[IO, Iterable[String]](runParams, console).asRight
 
       case "pimc" =>
-        implicit val runParams: Option[PiMC] = cfg.runParams
-          .collect{ case p: PiMC => p }
+        implicit val runParams: Option[PiMcmc] = cfg.runParams
+          .collect{ case p: PiMcmc => p }
           .headOption
-        implicit val sync = Sync[IO] // taotodo is this the right way to instantiate?
+        implicit val sync = Sync[IO]
         PiMCRunner.make[IO](runParams).asRight
 
       case _ =>
