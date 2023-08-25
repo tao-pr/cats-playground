@@ -13,8 +13,11 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import scala.util.Random
 import java.nio.file.Path
+import java.nio.charset.StandardCharsets
+import scala.jdk.CollectionConverters._
 
-sealed abstract class GenerateCsvRunner[F[_]: Sync : Monad](override val runParams: Option[GenerateCsv])(
+sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
+  override val runParams: Option[GenerateCsv])(
   implicit console: Console[F]
 ) extends Runner[F, Unit] {
 
@@ -37,7 +40,7 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Monad](override val runPara
   }
 
   /**
-    * returns true if directy is created or already exists
+    * returns true if directly is created or already exists
     */
   def makeDirExist(path: String): F[Boolean] = {
     val existF = Sync[F].delay(Files.exists(Paths.get(path)) && Files.isDirectory(Paths.get(path)))
@@ -57,8 +60,8 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Monad](override val runPara
     }
   }
 
-  def genFiles(N: Int, nLines: Int, dirPath: String): F[List[String]] = {
-    (1 to N).toList.traverse{ i => genFile(i, nLines, genFileName(dirPath, i))}
+  def genFiles(N: Int, nLines: Int, dirPath: String): F[List[Path]] = {
+    (1 to N).toList.parTraverse{ i => genFile(i, nLines, genFileName(dirPath, i))}
   }
 
   def genFileName(dirPath: String, i: Int): Path = {
@@ -67,19 +70,30 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Monad](override val runPara
     val base = Paths.get(dirPath)
     val filenameLen = 5
     
-    Paths.get((1 to filenameLen).map(genChar).mkString("file-","",".csv"))
+    Paths.get(dirPath).resolve(Paths.get((1 to filenameLen).map(genChar).mkString("file-","",".csv")))    
   }
 
-  def genFile(i: Int, nLines: Int, path: Path): F[String] = {
-    // taotodo
-    Screen.println(s"... Generating file#${i} => ${path.getFileName}") >>
-    Monad[F].pure(path.toAbsolutePath().toString())
+  def genFile(i: Int, nLines: Int, path: Path): F[Path] = {
+    for {
+      _ <- Screen.println(s"... Generating file#${i} => ${path.toString}")
+      lines <- (1 to nLines).toList.traverse{_ =>  genLine}
+    } yield {
+      Files.write(path, lines.asJava, StandardCharsets.UTF_8)
+      path
+    }
+  }
+
+  def genLine: F[String] = {
+    val firstCol = java.util.UUID.randomUUID().toString
+    val numNumCols = 25
+    val numericalCols = (1 to numNumCols).map{_ => Random.nextFloat.toString}.mkString(",")
+    Monad[F].pure(firstCol + "," + numericalCols)
   }
   
 }
 
 object GenerateCsvRunner {
-  def make[F[_]: Sync : Monad](runParams: Option[GenerateCsv])(
+  def make[F[_]: Sync : Parallel : Monad](runParams: Option[GenerateCsv])(
     implicit console: Console[F]
   ): GenerateCsvRunner[F] = {
     new GenerateCsvRunner(runParams){}
