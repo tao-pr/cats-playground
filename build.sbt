@@ -11,6 +11,9 @@ lazy val root = (project in file(".")).settings(
     "org.typelevel" %% "cats-effect-kernel" % "3.3.12",
     // standard "effect" library (Queues, Console, Random etc.)
     "org.typelevel" %% "cats-effect-std" % "3.3.12",
+    // fs2
+    "co.fs2" %% "fs2-core" % "3.8.0",
+    "co.fs2" %% "fs2-io" % "3.8.0",
     // configurations
     "com.github.pureconfig" %% "pureconfig" % "0.17.4",
     "com.github.pureconfig" %% "pureconfig-cats-effect" % "0.17.4",

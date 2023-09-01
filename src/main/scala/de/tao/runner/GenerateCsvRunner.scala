@@ -32,7 +32,7 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
       _ <- Screen.green(s"Generating ${N} CSV files (${nLines} lines per file) into ${outputDir}")
       isCreated <- makeDirExist(outputDir) // taotodo write with ifM
       _ <- if (!isCreated)
-          Monad[F].pure({})
+          Monad[F].unit
         else 
           Screen.println(s"Direction $outputDir ready") *>
           genFiles(N, nLines, outputDir)
@@ -85,7 +85,7 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
 
   def genLine: F[String] = {
     val firstCol = java.util.UUID.randomUUID().toString
-    val numNumCols = 25
+    val numNumCols = 4
     val numericalCols = (1 to numNumCols).map{_ => Random.nextFloat.toString}.mkString(",")
     Monad[F].pure(firstCol + "," + numericalCols)
   }

@@ -12,6 +12,8 @@ import cats.effect.ExitCode
 import cats.data.EitherT
 import cats.effect.kernel.Sync
 
+case class GenCSV(uuid: String, a: Double, b: Double, c: Double, d: Double)
+
 object Main extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] = { 
@@ -27,10 +29,11 @@ object Main extends IOApp {
         GenerateCsvRunner.make[IO](runParams).asRight
 
       case "process-csv" =>
+        import de.tao.common.DataTypes._
         val runParams: Option[ProcessCSV] = cfg.runParams
           .collect{ case p: ProcessCSV => p }
           .headOption
-        ProcessCsvRunner.make[IO, Iterable[String]](runParams, console).asRight
+        ProcessCsvRunner.make[IO, SampleCsv](runParams).asRight
 
       case "pimc" =>
         implicit val runParams: Option[PiMcmc] = cfg.runParams
