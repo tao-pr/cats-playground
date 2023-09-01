@@ -13,7 +13,7 @@ import cats.effect.std.Console
 import cats.Monad
 
 import scala.jdk.CollectionConverters._
-import fs2.io.file.Files
+import fs2.io.file.{Files, Flags}
 import fs2.io.file.Path
 import fs2.{Stream, io, text}
 import cats.effect.kernel.Resource
@@ -27,7 +27,7 @@ extends Runner[F, Iterable[K]] {
 
   val F = implicitly[Sync[F]]
 
-  override def run(): F[Iterable[K]] = {
+  override def run: F[Iterable[K]] = {
     
     // parameters
     val inputDir = runParams.map(_.inputDir).getOrElse(".")
@@ -36,19 +36,19 @@ extends Runner[F, Iterable[K]] {
     for {
       _ <- Screen.green(s"Reading csv inputs from dir: ${inputDir}")
       _ <- Screen.green(s"Processed output will be written to dir: ${outputDir}")
-      processedFileList <- processDir(inputDir, outputDir)
-    } yield processedFileList
+      processedDataPoints <- processDir(inputDir, outputDir)
+    } yield processedDataPoints
 
     // taotodo ^ add handleError()
   }
 
   def listAllCsv(inputDir: String): Stream[F, Path] = {
-    Files[F].walk(Path(inputDir)).filter(_.toString.endsWith(".csv"))
+    Files[F].walk(Path(inputDir)).filter(_.extName == ".csv")
   }
 
   def readAndTransfrom(csvPath: Path): Stream[F, Either[Throwable, K]] = {
     Files[F]
-      .readAll(csvPath, 4096)
+      .readAll(csvPath, 4096, Flags.Read)
       .through(text.utf8.decode)
       .through(text.lines)
       // .drop(1) if there exists a header
@@ -56,6 +56,9 @@ extends Runner[F, Iterable[K]] {
       // taotodo apply some type conversion
   }
 
+  /**
+    * Process each data point and write into JSON format
+    */
   def generateJsonFile(data: Either[Throwable, K]): F[List[K]] = {
     ??? // taotodo
   }
@@ -72,11 +75,7 @@ extends Runner[F, Iterable[K]] {
       // how to take List[K] from the stream pipeline?
       ??? // taotodo
     }
-    
-    
   }
-  
-  
 }
 
 object ProcessCsvRunner {

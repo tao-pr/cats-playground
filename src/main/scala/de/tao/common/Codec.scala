@@ -8,7 +8,7 @@ trait Codec[K, C] {
   def decode(coded: C): Either[Throwable, K]
 }
 
-trait StringCodec[K] extends Codec[String, K] {
+trait StringCodec[K] extends Codec[K, String] {
   override def encode(raw: K): Either[Throwable, String]
   override def decode(coded: String): Either[Throwable, K]
 }
@@ -19,7 +19,7 @@ abstract class CsvCodec[K](delim: String = ",") extends StringCodec[K] {
   val coder: K => String
 
   override def encode(raw: K): Either[Throwable, String] = {
-    // coder(raw).asRight[K]
+    // Either.catchNonFatal(coder(raw))
     ??? // taotodo
   }
 
