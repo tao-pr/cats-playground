@@ -1,5 +1,12 @@
 package de.tao.common
 
+import cats.syntax.EitherOps
+import cats.syntax.either._
+
+import io.circe._
+import io.circe.syntax._
+
+
 /**
   * Defines a code which transform between coded [C] and raw type [K]
   */
@@ -19,13 +26,29 @@ abstract class CsvCodec[K](delim: String = ",") extends StringCodec[K] {
   val coder: K => String
 
   override def encode(raw: K): Either[Throwable, String] = {
-    // Either.catchNonFatal(coder(raw))
-    ??? // taotodo
+    Either.catchNonFatal { coder(raw) }
   }
 
   override def decode(coded: String): Either[Throwable, K] = {
-    val tokens = coded.split(delim)
-    // parser(tokens).asRight[K]
-    ??? // taotodo
+    Either.catchNonFatal {
+      val tokens = coded.split(delim).toList
+      parser(tokens)
+    }
+  }
+}
+
+abstract class JsonCodec[K] extends StringCodec[K]{
+
+  implicit val jsonEncoder: Encoder[K]
+
+  val parser: String => K = throw new NotImplementedError("parser is not implemented")
+  val coder: K => String = (k: K) => k.asJson.noSpaces
+
+  override def encode(raw: K): Either[Throwable, String] = {
+    Either.catchNonFatal{ coder(raw) }
+  }
+
+  override def decode(coded: String): Either[Throwable, K] = {
+    Either.catchNonFatal{ parser(coded) }
   }
 }

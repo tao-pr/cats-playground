@@ -3,31 +3,34 @@ package de.tao.runner
 import de.tao.common.Screen
 import de.tao.config.AppConfig
 import de.tao.config.ProcessCSV
-import de.tao.common.CsvCodec
+import de.tao.common.{CsvCodec, JsonCodec}
+
+import scala.concurrent.ExecutionContext
+import scala.jdk.CollectionConverters._
 
 import cats.effect.std.Console
 import cats.effect.IO
-import cats.syntax.all._ // This makes F[_] for-comprehensible
+import cats.effect.kernel.Resource
+import cats.effect.kernel.Sync
 import cats.effect.kernel.Async
-import cats.effect.std.Console
+import cats.syntax.all._ // This makes F[_] for-comprehensible
 import cats.Monad
 
-import scala.jdk.CollectionConverters._
 import fs2.io.file.{Files, Flags}
 import fs2.io.file.Path
 import fs2.{Stream, io, text}
-import cats.effect.kernel.Resource
-import cats.effect.kernel.Sync
-import scala.concurrent.ExecutionContext
 
-sealed abstract class ProcessCsvRunner[F[_]: Files : Sync, K](override val runParams: Option[ProcessCSV])(
-  implicit console: Console[F], codec: CsvCodec[K]
+import java.nio.file.{Files => nioFiles}
+
+sealed abstract class ProcessCsvRunner[F[_]: Files : Sync, K](
+  override val runParams: Option[ProcessCSV])(
+  implicit console: Console[F], csvCodec: CsvCodec[K], jsonCodec: JsonCodec[K]
 )
-extends Runner[F, Iterable[K]] {
+extends Runner[F, Unit] {
 
   val F = implicitly[Sync[F]]
 
-  override def run: F[Iterable[K]] = {
+  override def run: F[Unit] = {
     
     // parameters
     val inputDir = runParams.map(_.inputDir).getOrElse(".")
@@ -36,8 +39,8 @@ extends Runner[F, Iterable[K]] {
     for {
       _ <- Screen.green(s"Reading csv inputs from dir: ${inputDir}")
       _ <- Screen.green(s"Processed output will be written to dir: ${outputDir}")
-      processedDataPoints <- processDir(inputDir, outputDir)
-    } yield processedDataPoints
+      _ <- processDir(inputDir, outputDir)
+    } yield {}
 
     // taotodo ^ add handleError()
   }
@@ -47,39 +50,73 @@ extends Runner[F, Iterable[K]] {
   }
 
   def readAndTransfrom(csvPath: Path): Stream[F, Either[Throwable, K]] = {
+    // taotodo should print out what it's doing
     Files[F]
       .readAll(csvPath, 4096, Flags.Read)
       .through(text.utf8.decode)
       .through(text.lines)
       // .drop(1) if there exists a header
-      .map{ line => codec.decode(line) } // string => Either[E, K]
-      // taotodo apply some type conversion
+      .map{ line => 
+        println(s"Reading file: ${csvPath.toString} - ${line}") // taodebug
+        csvCodec.decode(line)
+      }
   }
 
   /**
     * Process each data point and write into JSON format
     */
-  def generateJsonFile(data: Either[Throwable, K]): F[List[K]] = {
-    ??? // taotodo
+  def generateJsonFile(outputDir: String)(data: Either[Throwable, K]): F[Unit] = {
+
+    toOptional(data).flatMap{ opt =>
+
+      opt.map{ p =>
+        jsonCodec.encode(p) match {
+          case Left(e) => throw e
+          case Right(json) => 
+            // Write json to file
+            val filePath = Path(outputDir) / (json.hashCode + ".json")
+            for {
+              _ <- Screen.println(s"Writing json file: ${filePath}")
+              _ <- writeJsonFile(filePath, json)
+            } yield {}
+        }
+      }.getOrElse(Monad[F].unit)
+    }
   }
 
-  def processDir(inputDir: String, outputDir: String): F[List[K]] = {
+  def writeJsonFile(filePath: Path, json: String): F[_] = {
+    Sync[F].delay(nioFiles.write(filePath.toNioPath, json.getBytes))
+  }
+
+  def toOptional(
+    data: Either[Throwable, K]): F[Option[K]] = {
+
+      data match {
+        case Left(throwable) => 
+          Screen.println(s"REJECTED data from: $throwable") *> Monad[F].pure(None)
+
+        case Right(value) =>
+          Screen.println(s"Generating output json: ${value}")
+          Monad[F].pure(Some(value))
+      }
+  }
+
+  def processDir(inputDir: String, outputDir: String): F[Unit] = {
     // Walk the input dir, getting all CSV files 
     for {
       sink <- listAllCsv(inputDir)
         .flatMap(readAndTransfrom)
-        .evalMap(generateJsonFile)
+        .evalMap(generateJsonFile(outputDir))
         .compile
         .drain
-    } yield {
-      // how to take List[K] from the stream pipeline?
-      ??? // taotodo
-    }
+    } yield {}
   }
 }
 
 object ProcessCsvRunner {
   def make[F[_]: Files : Sync, K](runParams: Option[ProcessCSV])(
-    implicit console: Console[F], codec: CsvCodec[K]): ProcessCsvRunner[F, K] = 
+    implicit console: Console[F], 
+    csvCodec: CsvCodec[K],
+    jsonCodec: JsonCodec[K]): ProcessCsvRunner[F, K] = 
       new ProcessCsvRunner[F, K](runParams){}
 }

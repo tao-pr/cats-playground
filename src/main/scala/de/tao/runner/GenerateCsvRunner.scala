@@ -83,6 +83,7 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
     }
   }
 
+  // Generate CSV line representing type {SampleCSV}
   def genLine: F[String] = {
     val firstCol = java.util.UUID.randomUUID().toString
     val numNumCols = 4
