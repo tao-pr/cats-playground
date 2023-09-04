@@ -27,6 +27,7 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
     val N = runParams.map(_.numFiles).getOrElse(1)
     val nLines = runParams.map(_.numLines).getOrElse(5)
     val outputDir = runParams.map(_.outputDir).getOrElse(".")
+    val prMalform = runParams.map(_.probMakeMalform).getOrElse(0.0)
 
     for {
       _ <- Screen.green(s"Generating ${N} CSV files (${nLines} lines per file) into ${outputDir}")
@@ -35,7 +36,7 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
           Monad[F].unit
         else 
           Screen.println(s"Direction $outputDir ready") *>
-          genFiles(N, nLines, outputDir)
+          genFiles(N, nLines, outputDir, prMalform)
     } yield {}
   }
 
@@ -60,8 +61,8 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
     }
   }
 
-  def genFiles(N: Int, nLines: Int, dirPath: String): F[List[Path]] = {
-    (1 to N).toList.parTraverse{ i => genFile(i, nLines, genFileName(dirPath, i))}
+  def genFiles(N: Int, nLines: Int, dirPath: String, prMalform: Double): F[List[Path]] = {
+    (1 to N).toList.parTraverse{ i => genFile(i, nLines, genFileName(dirPath, i), prMalform)}
   }
 
   def genFileName(dirPath: String, i: Int): Path = {
@@ -73,10 +74,10 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
     Paths.get(dirPath).resolve(Paths.get((1 to filenameLen).map(genChar).mkString("file-","",".csv")))    
   }
 
-  def genFile(i: Int, nLines: Int, path: Path): F[Path] = {
+  def genFile(i: Int, nLines: Int, path: Path, prMalform: Double): F[Path] = {
     for {
-      _ <- Screen.println(s"... Generating file#${i} => ${path.toString}")
-      lines <- (1 to nLines).toList.traverse{_ =>  genLine}
+      _ <- Screen.println(s"... Generating file#${i} => ${path.toString}")        
+      lines <- (1 to nLines).toList.traverse{_ =>  genLine(prMalform) }
     } yield {
       Files.write(path, lines.asJava, StandardCharsets.UTF_8)
       path
@@ -84,11 +85,16 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
   }
 
   // Generate CSV line representing type {SampleCSV}
-  def genLine: F[String] = {
-    val firstCol = java.util.UUID.randomUUID().toString
-    val numNumCols = 4
-    val numericalCols = (1 to numNumCols).map{_ => Random.nextFloat.toString}.mkString(",")
-    Monad[F].pure(firstCol + "," + numericalCols)
+  def genLine(prMalform: Double): F[String] = {
+    if (Random.nextDouble < prMalform ){
+      Monad[F].pure("this line is malformed.")
+    }
+    else {
+      val firstCol = java.util.UUID.randomUUID().toString
+      val numNumCols = 4
+      val numericalCols = (1 to numNumCols).map{_ => Random.nextFloat.toString}.mkString(",")
+      Monad[F].pure(firstCol + "," + numericalCols)
+    }
   }
   
 }

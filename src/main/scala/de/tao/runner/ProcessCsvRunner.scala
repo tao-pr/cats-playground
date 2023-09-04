@@ -56,13 +56,9 @@ extends Runner[F, Unit] {
       .through(text.utf8.decode)
       .through(text.lines)
       // .drop(1) if there exists a header
-      .map{ line => 
-        
-        // taotodo:
-        // make following fail and ignore some line
-
+      .map{ line =>
         println(s"Reading file: ${csvPath.toString} - ${line}") // taodebug
-        csvCodec.decode(line)
+        csvCodec.decode(line) // either
       }
   }
 

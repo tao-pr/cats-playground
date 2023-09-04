@@ -11,7 +11,12 @@ import cats.data.{NonEmptyList}
 
 sealed trait RunParams
 object NoRunParams extends RunParams
-case class GenerateCsv(outputDir: String, numFiles: Int, numLines: Int) extends RunParams
+case class GenerateCsv(
+  outputDir: String, 
+  numFiles: Int, 
+  numLines: Int,
+  probMakeMalform: Double)
+  extends RunParams
 case class ProcessCSV(inputDir: String, outputDir: String, parallel: Option[Boolean]) extends RunParams
 case class PiMcmc(iter: Int) extends RunParams
 
