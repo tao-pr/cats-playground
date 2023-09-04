@@ -57,7 +57,6 @@ extends Runner[F, Unit] {
       .through(text.lines)
       // .drop(1) if there exists a header
       .map{ line =>
-        println(s"Reading file: ${csvPath.toString} - ${line}") // taodebug
         csvCodec.decode(line) // either
       }
   }

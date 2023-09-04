@@ -31,8 +31,8 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
 
     for {
       _ <- Screen.green(s"Generating ${N} CSV files (${nLines} lines per file) into ${outputDir}")
-      isCreated <- makeDirExist(outputDir) // taotodo write with ifM
-      _ <- if (!isCreated)
+      isCreated <- makeDirExist(outputDir)
+      _ <- if (!isCreated) // This seems to be clearer than Monad[F].ifM
           Monad[F].unit
         else 
           Screen.println(s"Direction $outputDir ready") *>
@@ -87,6 +87,7 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
   // Generate CSV line representing type {SampleCSV}
   def genLine(prMalform: Double): F[String] = {
     if (Random.nextDouble < prMalform ){
+      // Intentionally break some csv lines
       Monad[F].pure("this line is malformed.")
     }
     else {
