@@ -39,6 +39,7 @@ abstract class CsvCodec[K](delim: String = ",") extends StringCodec[K] {
 
 abstract class JsonCodec[K] extends StringCodec[K]{
 
+  // circe
   implicit val jsonEncoder: Encoder[K]
 
   val parser: String => K = throw new NotImplementedError("parser is not implemented")

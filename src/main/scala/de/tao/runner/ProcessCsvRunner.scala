@@ -57,6 +57,10 @@ extends Runner[F, Unit] {
       .through(text.lines)
       // .drop(1) if there exists a header
       .map{ line => 
+        
+        // taotodo:
+        // make following fail and ignore some line
+
         println(s"Reading file: ${csvPath.toString} - ${line}") // taodebug
         csvCodec.decode(line)
       }
@@ -96,7 +100,7 @@ extends Runner[F, Unit] {
           Screen.println(s"REJECTED data from: $throwable") *> Monad[F].pure(None)
 
         case Right(value) =>
-          Screen.println(s"Generating output json: ${value}")
+          Screen.println(s"Generating output json: ${value}") *>
           Monad[F].pure(Some(value))
       }
   }

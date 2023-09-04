@@ -24,8 +24,5 @@ object DataTypes {
 
   implicit val sampleJsonCodec = new JsonCodec[SampleCsv] {
     override implicit val jsonEncoder: Encoder[SampleCsv] = Encoder[SampleCsv]
-    override val parser: String => SampleCsv = ??? // taotodo
-    override val coder: SampleCsv => String = ??? // taotodo
   }
-
 }
