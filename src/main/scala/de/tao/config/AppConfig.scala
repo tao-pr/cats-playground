@@ -17,7 +17,7 @@ case class GenerateCsv(
   numLines: Int,
   probMakeMalform: Double)
   extends RunParams
-case class ProcessCSV(inputDir: String, outputDir: String, parallel: Option[Boolean]) extends RunParams
+case class CsvToJson(inputDir: String, outputDir: String, parallel: Option[Boolean]) extends RunParams
 case class PiMcmc(iter: Int) extends RunParams
 
 case class AppConfig(

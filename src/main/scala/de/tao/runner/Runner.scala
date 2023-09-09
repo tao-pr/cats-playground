@@ -18,8 +18,3 @@ trait Runner[F[_], K] {
   val runParams: Option[_ <: RunParams]
   def run: F[K] // effectful, takes no additional input
 }
-
-
-// taotodo:
-// - IO.race (try with IO.sleep - non-thread blocking)
-// - IO.

@@ -28,12 +28,12 @@ object Main extends IOApp {
           .headOption
         GenerateCsvRunner.make[IO](runParams).asRight
 
-      case "process-csv" =>
-        import de.tao.common.DataTypes._
-        val runParams: Option[ProcessCSV] = cfg.runParams
-          .collect{ case p: ProcessCSV => p }
+      case "csv-to-json" =>
+        import de.tao.common.DataTypes._ // Import implicit JSON encoder
+        val runParams: Option[CsvToJson] = cfg.runParams
+          .collect{ case p: CsvToJson => p }
           .headOption
-        ProcessCsvRunner.make[IO, SampleCsv](runParams).asRight
+        CsvToJsonRunner.make[IO, SampleCsv](runParams).asRight
 
       case "pimc" =>
         implicit val runParams: Option[PiMcmc] = cfg.runParams

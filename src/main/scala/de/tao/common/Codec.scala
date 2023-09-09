@@ -39,17 +39,16 @@ abstract class CsvCodec[K](delim: String = ",") extends StringCodec[K] {
 
 abstract class JsonCodec[K] extends StringCodec[K]{
 
-  // circe
+  // circe (for asJson)
   implicit val jsonEncoder: Encoder[K]
 
-  val parser: String => K = throw new NotImplementedError("parser is not implemented")
-  val coder: K => String = (k: K) => k.asJson.noSpaces
-
   override def encode(raw: K): Either[Throwable, String] = {
-    Either.catchNonFatal{ coder(raw) }
+    Either.catchNonFatal{
+      raw.asJson.noSpacesSortKeys 
+    }
   }
 
   override def decode(coded: String): Either[Throwable, K] = {
-    Either.catchNonFatal{ parser(coded) }
+    Left(new NotImplementedError("JsonCodec.decode is not implemented"))
   }
 }

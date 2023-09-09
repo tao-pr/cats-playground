@@ -1,6 +1,9 @@
 package de.tao.common
 
 import io.circe.Encoder
+// import io.circe.generic.auto._
+import io.circe.syntax._
+import io.circe.generic.semiauto._
 
 object DataTypes {
     
@@ -19,10 +22,9 @@ object DataTypes {
     override val coder: SampleCsv => String = { k =>
       s"${k.uuid},${k.a},${k.b},${k.c},${k.d}"
     }
-
   }
 
   implicit val sampleJsonCodec = new JsonCodec[SampleCsv] {
-    override implicit val jsonEncoder: Encoder[SampleCsv] = Encoder[SampleCsv]
+    override implicit val jsonEncoder: Encoder[SampleCsv] = deriveCodec[SampleCsv]
   }
 }

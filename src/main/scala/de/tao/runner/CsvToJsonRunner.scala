@@ -2,7 +2,7 @@ package de.tao.runner
 
 import de.tao.common.Screen
 import de.tao.config.AppConfig
-import de.tao.config.ProcessCSV
+import de.tao.config.CsvToJson
 import de.tao.common.{CsvCodec, JsonCodec}
 
 import scala.concurrent.ExecutionContext
@@ -16,14 +16,17 @@ import cats.effect.kernel.Async
 import cats.syntax.all._ // This makes F[_] for-comprehensible
 import cats.Monad
 
+// import io.circe.syntax._
+// import io.circe.generic.auto._
+
 import fs2.io.file.{Files, Flags}
 import fs2.io.file.Path
 import fs2.{Stream, io, text}
 
 import java.nio.file.{Files => nioFiles}
 
-sealed abstract class ProcessCsvRunner[F[_]: Files : Sync, K](
-  override val runParams: Option[ProcessCSV])(
+sealed abstract class CsvToJsonRunner[F[_]: Files : Sync, K](
+  override val runParams: Option[CsvToJson])(
   implicit console: Console[F], csvCodec: CsvCodec[K], jsonCodec: JsonCodec[K]
 )
 extends Runner[F, Unit] {
@@ -50,7 +53,6 @@ extends Runner[F, Unit] {
   }
 
   def readAndTransfrom(csvPath: Path): Stream[F, Either[Throwable, K]] = {
-    // taotodo should print out what it's doing
     Files[F]
       .readAll(csvPath, 4096, Flags.Read)
       .through(text.utf8.decode)
@@ -107,15 +109,15 @@ extends Runner[F, Unit] {
         .flatMap(readAndTransfrom)
         .evalMap(generateJsonFile(outputDir))
         .compile
-        .drain
+        .drain // taotodo let's try foldMonoid
     } yield {}
   }
 }
 
-object ProcessCsvRunner {
-  def make[F[_]: Files : Sync, K](runParams: Option[ProcessCSV])(
+object CsvToJsonRunner {
+  def make[F[_]: Files : Sync, K](runParams: Option[CsvToJson])(
     implicit console: Console[F], 
     csvCodec: CsvCodec[K],
-    jsonCodec: JsonCodec[K]): ProcessCsvRunner[F, K] = 
-      new ProcessCsvRunner[F, K](runParams){}
+    jsonCodec: JsonCodec[K]): CsvToJsonRunner[F, K] = 
+      new CsvToJsonRunner[F, K](runParams){}
 }
