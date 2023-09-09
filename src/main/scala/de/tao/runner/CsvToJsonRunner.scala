@@ -4,6 +4,7 @@ import de.tao.common.Screen
 import de.tao.config.AppConfig
 import de.tao.config.CsvToJson
 import de.tao.common.{CsvCodec, JsonCodec}
+import de.tao.common.Disk._
 
 import scala.concurrent.ExecutionContext
 import scala.jdk.CollectionConverters._
@@ -15,9 +16,6 @@ import cats.effect.kernel.Sync
 import cats.effect.kernel.Async
 import cats.syntax.all._ // This makes F[_] for-comprehensible
 import cats.Monad
-
-// import io.circe.syntax._
-// import io.circe.generic.auto._
 
 import fs2.io.file.{Files, Flags}
 import fs2.io.file.Path
@@ -42,7 +40,12 @@ extends Runner[F, Unit] {
     for {
       _ <- Screen.green(s"Reading csv inputs from dir: ${inputDir}")
       _ <- Screen.green(s"Processed output will be written to dir: ${outputDir}")
-      _ <- processDir(inputDir, outputDir)
+      isCreated <- makeDirExist(outputDir)
+      _ <- if (!isCreated) // This seems to be clearer than Monad[F].ifM
+          Monad[F].unit
+        else 
+          Screen.println(s"Direction $outputDir ready") *>
+          processDir(inputDir, outputDir)
     } yield {}
 
     // taotodo ^ add handleError()
@@ -94,7 +97,7 @@ extends Runner[F, Unit] {
 
       data match {
         case Left(throwable) => 
-          Screen.println(s"REJECTED data from: $throwable") *> Monad[F].pure(None)
+        Screen.red(s"REJECTED data from: $throwable") *> Monad[F].pure(None)
 
         case Right(value) =>
           Screen.println(s"Generating output json: ${value}") *>
@@ -104,6 +107,9 @@ extends Runner[F, Unit] {
 
   def processDir(inputDir: String, outputDir: String): F[Unit] = {
     // Walk the input dir, getting all CSV files 
+
+    // taotodo ensure output dir exists
+
     for {
       sink <- listAllCsv(inputDir)
         .flatMap(readAndTransfrom)

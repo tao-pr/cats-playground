@@ -39,7 +39,7 @@ abstract class CsvCodec[K](delim: String = ",") extends StringCodec[K] {
 
 abstract class JsonCodec[K] extends StringCodec[K]{
 
-  // circe (for asJson)
+  // Circle encoder
   implicit val jsonEncoder: Encoder[K]
 
   override def encode(raw: K): Either[Throwable, String] = {

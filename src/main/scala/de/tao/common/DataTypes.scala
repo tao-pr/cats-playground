@@ -1,7 +1,6 @@
 package de.tao.common
 
 import io.circe.Encoder
-// import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.generic.semiauto._
 

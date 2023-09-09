@@ -2,6 +2,7 @@ package de.tao.runner
 
 import de.tao.common.Screen
 import de.tao.config.GenerateCsv
+import de.tao.common.Disk._
 
 import cats.effect.std.Console
 import cats.Monad
@@ -38,27 +39,6 @@ sealed abstract class GenerateCsvRunner[F[_]: Sync : Parallel : Monad](
           Screen.println(s"Direction $outputDir ready") *>
           genFiles(N, nLines, outputDir, prMalform)
     } yield {}
-  }
-
-  /**
-    * returns true if directly is created or already exists
-    */
-  def makeDirExist(path: String): F[Boolean] = {
-    val existF = Sync[F].delay(Files.exists(Paths.get(path)) && Files.isDirectory(Paths.get(path)))
-
-    Monad[F].ifM(existF)(
-      Screen.println(s"Directory $path already exists.") >> Monad[F].pure(true),
-      Screen.println(s"Creating $path") >> makeDir(path)
-    )
-  }
-
-  def makeDir(path: String): F[Boolean] = {
-    Sync[F].delay {
-      Files.createDirectories(Paths.get(path))
-    }.as(true).handleErrorWith{
-      throwable =>
-        Screen.red(s"FAILED to create $path : ${throwable.getMessage()}") *> Sync[F].pure(false)
-    }
   }
 
   def genFiles(N: Int, nLines: Int, dirPath: String, prMalform: Double): F[List[Path]] = {
