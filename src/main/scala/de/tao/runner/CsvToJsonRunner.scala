@@ -107,9 +107,6 @@ extends Runner[F, Unit] {
 
   def processDir(inputDir: String, outputDir: String): F[Unit] = {
     // Walk the input dir, getting all CSV files 
-
-    // taotodo ensure output dir exists
-
     for {
       sink <- listAllCsv(inputDir)
         .flatMap(readAndTransfrom)
