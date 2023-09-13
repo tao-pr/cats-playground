@@ -35,6 +35,13 @@ object Main extends IOApp {
           .headOption
         CsvToJsonRunner.make[IO, SampleCsv](runParams).asRight
 
+      case "combine-json" =>
+        import de.tao.common.DataTypes._ // Import implicit JSON encoder
+        val runParams: Option[CombineJson] = cfg.runParams
+          .collect{ case p: CombineJson => p }
+          .headOption
+        CombineJsonRunner.make[IO, SampleCsv](runParams).asRight
+
       case "pimc" =>
         implicit val runParams: Option[PiMcmc] = cfg.runParams
           .collect{ case p: PiMcmc => p }

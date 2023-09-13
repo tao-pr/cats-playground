@@ -23,32 +23,35 @@ import fs2.{Stream, io, text}
 
 import java.nio.file.{Files => nioFiles}
 
-sealed abstract class CsvToJsonRunner[F[_]: Files : Sync, K](
-  override val runParams: Option[CsvToJson])(
-  implicit console: Console[F], csvCodec: CsvCodec[K], jsonCodec: JsonCodec[K]
-)
-extends Runner[F, Unit] {
+sealed abstract class CsvToJsonRunner[F[_]: Files: Sync, K](
+    override val runParams: Option[CsvToJson]
+)(implicit
+    console: Console[F],
+    csvCodec: CsvCodec[K],
+    jsonCodec: JsonCodec[K]
+) extends Runner[F, Unit] {
 
   val F = implicitly[Sync[F]]
 
   override def run: F[Unit] = {
-    
+
     // parameters
     val inputDir = runParams.map(_.inputDir).getOrElse(".")
     val outputDir = runParams.map(_.outputDir).getOrElse(".")
 
     for {
       _ <- Screen.green(s"Reading csv inputs from dir: ${inputDir}")
-      _ <- Screen.green(s"Processed output will be written to dir: ${outputDir}")
+      _ <- Screen.green(
+        s"Processed output will be written to dir: ${outputDir}"
+      )
       isCreated <- makeDirExist(outputDir)
-      _ <- if (!isCreated) // This seems to be clearer than Monad[F].ifM
+      _ <-
+        if (!isCreated) // This seems to be clearer than Monad[F].ifM
           Monad[F].unit
-        else 
+        else
           Screen.println(s"Direction $outputDir ready") *>
-          processDir(inputDir, outputDir)
+            processDir(inputDir, outputDir)
     } yield {}
-
-    // taotodo ^ add handleError()
   }
 
   def listAllCsv(inputDir: String): Stream[F, Path] = {
@@ -61,30 +64,32 @@ extends Runner[F, Unit] {
       .through(text.utf8.decode)
       .through(text.lines)
       // .drop(1) if there exists a header
-      .map{ line =>
+      .map { line =>
         csvCodec.decode(line) // either
       }
   }
 
-  /**
-    * Process each data point and write into JSON format
+  /** Process each data point and write into JSON format
     */
-  def generateJsonFile(outputDir: String)(data: Either[Throwable, K]): F[Unit] = {
+  def generateJsonFile(
+      outputDir: String
+  )(data: Either[Throwable, K]): F[Unit] = {
 
-    toOptional(data).flatMap{ opt =>
-
-      opt.map{ p =>
-        jsonCodec.encode(p) match {
-          case Left(e) => throw e
-          case Right(json) => 
-            // Write json to file
-            val filePath = Path(outputDir) / (json.hashCode + ".json")
-            for {
-              _ <- Screen.println(s"Writing json file: ${filePath}")
-              _ <- writeJsonFile(filePath, json)
-            } yield {}
+    toOptional(data).flatMap { opt =>
+      opt
+        .map { p =>
+          jsonCodec.encode(p) match {
+            case Left(e)     => throw e
+            case Right(json) =>
+              // Write json to file
+              val filePath = Path(outputDir) / (json.hashCode + ".json")
+              for {
+                _ <- Screen.println(s"Writing json file: ${filePath}")
+                _ <- writeJsonFile(filePath, json)
+              } yield {}
+          }
         }
-      }.getOrElse(Monad[F].unit)
+        .getOrElse(Monad[F].unit)
     }
   }
 
@@ -92,35 +97,34 @@ extends Runner[F, Unit] {
     Sync[F].delay(nioFiles.write(filePath.toNioPath, json.getBytes))
   }
 
-  def toOptional(
-    data: Either[Throwable, K]): F[Option[K]] = {
+  def toOptional(data: Either[Throwable, K]): F[Option[K]] = {
 
-      data match {
-        case Left(throwable) => 
+    data match {
+      case Left(throwable) =>
         Screen.red(s"REJECTED data from: $throwable") *> Monad[F].pure(None)
 
-        case Right(value) =>
-          Screen.println(s"Generating output json: ${value}") *>
+      case Right(value) =>
+        Screen.println(s"Generating output json: ${value}") *>
           Monad[F].pure(Some(value))
-      }
+    }
   }
 
   def processDir(inputDir: String, outputDir: String): F[Unit] = {
-    // Walk the input dir, getting all CSV files 
+    // Walk the input dir, getting all CSV files
     for {
       sink <- listAllCsv(inputDir)
         .flatMap(readAndTransfrom)
         .evalMap(generateJsonFile(outputDir))
         .compile
-        .drain // taotodo let's try foldMonoid
+        .drain
     } yield {}
   }
 }
 
 object CsvToJsonRunner {
-  def make[F[_]: Files : Sync, K](runParams: Option[CsvToJson])(
-    implicit console: Console[F], 
-    csvCodec: CsvCodec[K],
-    jsonCodec: JsonCodec[K]): CsvToJsonRunner[F, K] = 
-      new CsvToJsonRunner[F, K](runParams){}
+  def make[F[_]: Console: Files: Sync, K](runParams: Option[CsvToJson])(implicit
+      csvCodec: CsvCodec[K],
+      jsonCodec: JsonCodec[K]
+  ): CsvToJsonRunner[F, K] =
+    new CsvToJsonRunner[F, K](runParams) {}
 }

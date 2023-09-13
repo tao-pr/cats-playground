@@ -11,11 +11,12 @@ import java.nio.file.Paths
 
 object Disk {
 
-  /**
-    * returns true if directly is created or already exists
+  /** returns true if directly is created or already exists
     */
-  def makeDirExist[F[_] : Sync : Console](path: String): F[Boolean] = {
-    val existF = Sync[F].delay(Files.exists(Paths.get(path)) && Files.isDirectory(Paths.get(path)))
+  def makeDirExist[F[_]: Sync: Console](path: String): F[Boolean] = {
+    val existF = Sync[F].delay(
+      Files.exists(Paths.get(path)) && Files.isDirectory(Paths.get(path))
+    )
 
     Monad[F].ifM(existF)(
       Screen.println(s"Directory $path already exists.") >> Monad[F].pure(true),
@@ -23,12 +24,17 @@ object Disk {
     )
   }
 
-  def makeDir[F[_] : Sync : Console](path: String): F[Boolean] = {
-    Sync[F].delay {
-      Files.createDirectories(Paths.get(path))
-    }.as(true).handleErrorWith{
-      throwable =>
-        Screen.red(s"FAILED to create $path : ${throwable.getMessage()}") *> Sync[F].pure(false)
-    }
+  def makeDir[F[_]: Sync: Console](path: String): F[Boolean] = {
+    Sync[F]
+      .delay {
+        Files.createDirectories(Paths.get(path))
+      }
+      .as(true)
+      .handleErrorWith { throwable =>
+        Screen.red(
+          s"FAILED to create $path : ${throwable.getMessage()}"
+        ) *> Sync[F].pure(false)
+      }
   }
+
 }

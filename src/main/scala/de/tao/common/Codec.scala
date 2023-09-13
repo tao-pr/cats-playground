@@ -6,9 +6,7 @@ import cats.syntax.either._
 import io.circe._
 import io.circe.syntax._
 
-
-/**
-  * Defines a code which transform between coded [C] and raw type [K]
+/** Defines a code which transform between coded [C] and raw type [K]
   */
 trait Codec[K, C] {
   def encode(raw: K): Either[Throwable, C]
@@ -21,7 +19,7 @@ trait StringCodec[K] extends Codec[K, String] {
 }
 
 abstract class CsvCodec[K](delim: String = ",") extends StringCodec[K] {
-  
+
   val parser: List[String] => K
   val coder: K => String
 
@@ -37,14 +35,14 @@ abstract class CsvCodec[K](delim: String = ",") extends StringCodec[K] {
   }
 }
 
-abstract class JsonCodec[K] extends StringCodec[K]{
+abstract class JsonCodec[K] extends StringCodec[K] {
 
   // Circle encoder
   implicit val jsonEncoder: Encoder[K]
 
   override def encode(raw: K): Either[Throwable, String] = {
-    Either.catchNonFatal{
-      raw.asJson.noSpacesSortKeys 
+    Either.catchNonFatal {
+      raw.asJson.noSpacesSortKeys
     }
   }
 
