@@ -40,6 +40,7 @@ object Main extends IOApp {
         val runParams: Option[CombineJson] = cfg.runParams
           .collect{ case p: CombineJson => p }
           .headOption
+        implicit val M = sumSampleCsvM
         CombineJsonRunner.make[IO, SampleCsv](runParams).asRight
 
       case "pimc" =>

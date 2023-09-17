@@ -5,6 +5,7 @@ import cats.syntax.either._
 
 import io.circe._
 import io.circe.syntax._
+import io.circe.generic.auto._ // for generic decoder
 
 /** Defines a code which transform between coded [C] and raw type [K]
   */
@@ -39,6 +40,7 @@ abstract class JsonCodec[K] extends StringCodec[K] {
 
   // Circle encoder
   implicit val jsonEncoder: Encoder[K]
+  implicit val jsonDecoder: Decoder[K]
 
   override def encode(raw: K): Either[Throwable, String] = {
     Either.catchNonFatal {
@@ -47,6 +49,6 @@ abstract class JsonCodec[K] extends StringCodec[K] {
   }
 
   override def decode(coded: String): Either[Throwable, K] = {
-    Left(new NotImplementedError("JsonCodec.decode is not implemented"))
+    io.circe.parser.decode[K](coded)
   }
 }
