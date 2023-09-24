@@ -24,7 +24,7 @@ case class CsvToJson(
 ) extends RunParams
 case class CombineJson(inputDir: String, readTimeout: Int) extends RunParams
 case class PiMcmc(iter: Int) extends RunParams
-case class EvalParams(numThreads: Int, vectorSize: Int, chanceToFail: Double, evalMode: String)
+case class EvalParams(numThreads: Int, vectorSize: Int, evalMode: String)
     extends RunParams
 
 case class AppConfig(

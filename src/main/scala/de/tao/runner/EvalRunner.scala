@@ -12,6 +12,7 @@ import cats.syntax.all._
 import cats.effect.kernel.Async
 import cats.effect.kernel.Outcome
 import cats.data.OptionT
+import cats.instances.vector
 
 abstract sealed class EvalRunner[F[_]: Concurrent: Async](implicit
     console: Console[F]
@@ -20,36 +21,35 @@ abstract sealed class EvalRunner[F[_]: Concurrent: Async](implicit
   val evalMode: String
   val vectorSize: Int
   val numThreads: Int
-  val chanceToFail: Double // chance that genNEL will fail
 
-  val genNEL: () => NonEmptyList[Int] = {
-    // taotodo: emulate fail rate
-    scala.util.Random.nextBytes(vectorSize).toList.map(_.toInt) match {
+  def genNEL: () => NonEmptyList[Byte] = {
+    scala.util.Random.nextBytes(vectorSize).toList match {
       case head :: tail => () => NonEmptyList(head, tail)
-      case _ => () => NonEmptyList(0, List.fill[Int](vectorSize - 1)(0))
+      case ks => () => 
+        NonEmptyList(0, List.fill[Byte](vectorSize - 1)(0))
     }
   }
 
   // Three types of thunks
   val thunkLazyAlways = Eval.always(genNEL) // lazy, non-memoized
   val thunkLazyMemoized = Eval.later(genNEL) // lazy, memoized
-  val thunkEager = Eval.now(genNEL)
+  val thunkEager = Eval.now(genNEL) // evaluate rightaway, won't work with class vars now
 
   // Create fiber
   def runThread(
       threadId: Int,
-      thunk: Eval[() => NonEmptyList[Int]]
-  ): F[NonEmptyList[Int]] = {
+      thunk: Eval[() => NonEmptyList[Byte]]
+  ): F[NonEmptyList[Byte]] = {
     for {
-      _ <- Screen.println(s"Generating thread #${threadId}")
+      _ <- Screen.println(s"Generating NEL from thread #${threadId}")
       nel <- Async[F].delay(
         thunk.value()
-      ) // taotodo is this a good way to evaluate?
+      )
     } yield nel
   }
 
   def convertOutcome(
-      outcome: Outcome[F, Throwable, NonEmptyList[Int]]
+      outcome: Outcome[F, Throwable, NonEmptyList[Byte]]
   ): OptionT[F, Double] = outcome match {
     case Outcome.Succeeded(fa) =>
       OptionT(fa.map(nel => Some(nel.toList.sum / nel.size.toDouble)))
@@ -96,8 +96,6 @@ object EvalRunner {
 
     override val runParams = _runParams
     override val evalMode: String = runParams.map(_.evalMode).getOrElse("eager")
-    override val chanceToFail: Double =
-      runParams.map(_.chanceToFail).getOrElse(0.0)
     override val vectorSize: Int = runParams.map(_.vectorSize).getOrElse(5)
     override val numThreads: Int = runParams.map(_.numThreads).getOrElse(10)
   }
