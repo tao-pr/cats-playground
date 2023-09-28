@@ -25,15 +25,15 @@ abstract sealed class EvalRunner[F[_]: Concurrent: Async](implicit
   def genNEL: () => NonEmptyList[Byte] = {
     scala.util.Random.nextBytes(vectorSize).toList match {
       case head :: tail => () => NonEmptyList(head, tail)
-      case ks => () => 
-        NonEmptyList(0, List.fill[Byte](vectorSize - 1)(0))
+      case ks => () => NonEmptyList(0, List.fill[Byte](vectorSize - 1)(0))
     }
   }
 
   // Three types of thunks
   val thunkLazyAlways = Eval.always(genNEL) // lazy, non-memoized
   val thunkLazyMemoized = Eval.later(genNEL) // lazy, memoized
-  val thunkEager = Eval.now(genNEL) // evaluate rightaway, won't work with class vars now
+  val thunkEager =
+    Eval.now(genNEL) // evaluate rightaway, won't work with class vars now
 
   // Create fiber
   def runThread(

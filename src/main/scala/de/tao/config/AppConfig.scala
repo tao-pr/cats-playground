@@ -10,22 +10,30 @@ import cats.effect.kernel.Sync
 import cats.data.{NonEmptyList}
 
 sealed trait RunParams
+
 object NoRunParams extends RunParams
+
 case class GenerateCsv(
     outputDir: String,
     numFiles: Int,
     numLines: Int,
     probMakeMalform: Double
 ) extends RunParams
+
 case class CsvToJson(
     inputDir: String,
     outputDir: String,
     parallel: Option[Boolean]
 ) extends RunParams
+
 case class CombineJson(inputDir: String, readTimeout: Int) extends RunParams
+
 case class PiMcmc(iter: Int) extends RunParams
+
 case class EvalParams(numThreads: Int, vectorSize: Int, evalMode: String)
     extends RunParams
+
+case class ForkParams(N: Int, M: Int, probBlocking: Double) extends RunParams
 
 case class AppConfig(
     runMode: String,

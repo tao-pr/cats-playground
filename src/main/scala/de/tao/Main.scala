@@ -56,6 +56,12 @@ object Main extends IOApp {
         }.headOption
         EvalRunner.make[IO](runParams).asRight
 
+      case "fork-runner" =>
+        implicit val runParams: Option[ForkParams] = cfg.runParams.collect {
+          case p: ForkParams => p
+        }.headOption
+        ForkRunner.make[IO](runParams).asRight
+
       case _ =>
         new UnsupportedOperationException(
           s"Unknown runner type: ${cfg.runMode}"
