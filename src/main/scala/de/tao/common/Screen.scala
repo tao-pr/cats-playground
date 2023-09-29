@@ -26,6 +26,9 @@ object Screen {
   def red[F[_]](text: String)(implicit eff: CLI[F]) =
     CLI[F].println(s"${C.RED}${text}${C.RESET}")
 
+  def yellow[F[_]](text: String)(implicit eff: CLI[F]) =
+    CLI[F].println(s"${C.YELLOW}${text}${C.RESET}")
+
   def green[F[_]](text: String)(implicit eff: CLI[F]) =
     CLI[F].println(s"${C.GREEN}${text}${C.RESET}")
 

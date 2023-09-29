@@ -33,7 +33,7 @@ case class PiMcmc(iter: Int) extends RunParams
 case class EvalParams(numThreads: Int, vectorSize: Int, evalMode: String)
     extends RunParams
 
-case class ForkParams(N: Int, M: Int, probBlocking: Double) extends RunParams
+case class ForkParams(N: Int, M: Int, probBlocking: Double, probRecursive: Double) extends RunParams
 
 case class AppConfig(
     runMode: String,
