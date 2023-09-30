@@ -11,7 +11,6 @@ import scala.jdk.CollectionConverters._
 
 import cats.effect.std.Console
 import cats.effect.IO
-import cats.effect.kernel.Resource
 import cats.effect.kernel.Sync
 import cats.effect.kernel.Async
 import cats.syntax.all._ // This makes F[_] for-comprehensible

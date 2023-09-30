@@ -13,7 +13,6 @@ import cats.Monad
 import fs2.io.file.{Files, Flags}
 import fs2.io.file.Path
 import fs2.{Stream, io, text}
-import javax.swing.text.html.BlockView
 import cats.kernel.Monoid
 
 sealed abstract class CombineJsonRunner[F[_]: Files: Sync: Parallel, K](

@@ -42,7 +42,7 @@ abstract sealed class ForkRunner[F[_]: Concurrent: Parallel: Temporal](implicit
     val willSleep = scala.util.Random.nextDouble() < chanceBlocking
     val willGenChild = level < M && scala.util.Random.nextDouble() < chanceRecursive
 
-    for {
+    val task = for {
       // Tick the global counter
       c <- counter.updateAndGet(_ + 1)
 
@@ -68,6 +68,10 @@ abstract sealed class ForkRunner[F[_]: Concurrent: Parallel: Temporal](implicit
             counter
           )
         else Monad[F].unit
+    } yield ()
+
+    for {
+      fiber <- Concurrent[F].start(task)
     } yield ()
   }
 

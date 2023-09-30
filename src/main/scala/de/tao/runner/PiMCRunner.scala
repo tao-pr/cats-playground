@@ -9,13 +9,12 @@ import cats.data.EitherT
 import cats.{Applicative, Parallel}
 import cats.syntax.all._ // This makes F[_] for-comprehensible
 
-
-/**
-  * Estimate Pi with MCMC
+/** Estimate Pi with MCMC
   */
-sealed abstract class PiMCRunner[F[_]: Parallel](override val runParams: Option[PiMcmc])(
-  implicit console: Console[F], F: Sync[F])
-  extends Runner[F, Double]{
+sealed abstract class PiMCRunner[F[_]: Parallel](
+    override val runParams: Option[PiMcmc]
+)(implicit console: Console[F], F: Sync[F])
+    extends Runner[F, Double] {
 
   override def run: F[Double] = {
 
@@ -37,16 +36,18 @@ sealed abstract class PiMCRunner[F[_]: Parallel](override val runParams: Option[
   def genXY(i: Int): F[Boolean] = {
     for {
       _ <- Screen.println(s"genXY [${i}]")
-      (x,y) = (Math.random(), Math.random())
-    } yield Math.abs(x*x + y*y) <= 1 // [?] Is this equivalent to F.delay() ?
+      (x, y) = (Math.random(), Math.random())
+    } yield Math.abs(
+      x * x + y * y
+    ) <= 1 // [?] Is this equivalent to F.delay() ?
   }
-  
+
 }
 
 object PiMCRunner {
   def make[F[_]: Parallel](
-    runParams: Option[PiMcmc]
+      runParams: Option[PiMcmc]
   )(implicit sync: Sync[F], console: Console[F]): PiMCRunner[F] = {
-    new PiMCRunner[F](runParams){}
+    new PiMCRunner[F](runParams) {}
   }
 }
