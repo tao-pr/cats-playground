@@ -65,6 +65,16 @@ Simulates Pi from Monte-Carlo method concurrently.
 > Using
 > - Parallel (parTraverse)
 
+#### RaceRunner
+
+Generates racing conditions of multiple threads which can also throw exceptions.
+
+> Using
+> - Fiber
+> - ApplicativeError (via F.raiseError)
+> - Temporal
+> - Concurrent (racePair)
+
 
 ## Licence
 

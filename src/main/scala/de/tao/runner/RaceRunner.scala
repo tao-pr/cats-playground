@@ -15,6 +15,7 @@ import java.util.concurrent.TimeoutException
 import cats.effect.kernel.Outcome.Canceled
 import cats.effect.kernel.Outcome.Errored
 import cats.effect.kernel.Outcome.Succeeded
+import cats.syntax.applicativeError._
 
 sealed abstract class RaceRunner[F[_]: Parallel: Async](implicit
     console: Console[F]
@@ -53,27 +54,29 @@ sealed abstract class RaceRunner[F[_]: Parallel: Async](implicit
   def gen(): F[Double] = {
 
     val toFail = scala.util.Random.nextDouble() < failRate
-    if (toFail) throw new RuntimeException("occassional failure")
-
-    val randomDelay = scala.util.Random.nextInt.abs.toInt % 128
-    Temporal[F].sleep(randomDelay.millis) *> Sync[F].delay(
-      scala.util.Random.nextDouble()
-    )
+    if (toFail) Async[F].raiseError(new Exception("occassional failure"))
+    else {
+      val randomDelay = scala.util.Random.nextInt.abs.toInt % 128
+      Temporal[F].sleep(randomDelay.millis) *> Sync[F].delay(
+        scala.util.Random.nextDouble()
+      )
+    }
   }
 
   /** Each task race with timeout
     */
   def createTask(i: Int): F[Option[Double]] = {
-    val leftTask = gen
-    val rightTask = timeoutF
 
     Screen.println(s"Racing task #${i}") *>
-      Concurrent[F].racePair(leftTask, rightTask).flatMap {
+      Concurrent[F].racePair(gen, timeoutF).flatMap {
+
+        // gen wins
         case Left((outcome, fiber)) =>
           outcomeToMonad(outcome, i)
 
-        case Right(timeout) =>
-          Screen.red(s"Task #${i} timed out after ${timeout} ms") *> Monad[F]
+        // timeoutF wins
+        case Right(suspended) =>
+          Screen.red(s"Task #${i} timed out after ${timeout} ms - got ${suspended}") *> Monad[F]
             .pure(None)
       }
   }
@@ -87,7 +90,7 @@ sealed abstract class RaceRunner[F[_]: Parallel: Async](implicit
         Screen.yellow(s"Task #{i} is cancelled") *> Monad[F].pure(None)
 
       case Errored(e) =>
-        Screen.red(s"Task #${i} is errored: $e") *> Monad[F].pure(None)
+        Screen.yellow(s"Task #${i} is errored: $e") *> Monad[F].pure(None)
 
       case Succeeded(fa) =>
         fa.flatMap { a =>
