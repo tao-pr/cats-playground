@@ -35,6 +35,8 @@ case class EvalParams(numThreads: Int, vectorSize: Int, evalMode: String)
 
 case class ForkParams(N: Int, M: Int, probBlocking: Double, probRecursive: Double) extends RunParams
 
+case class RaceParams(N: Int, failRate: Double, timeout: Int) extends RunParams
+
 case class AppConfig(
     runMode: String,
     runParams: List[_ <: RunParams],

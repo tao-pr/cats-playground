@@ -1,6 +1,6 @@
 # cats-playground
 
-An example application built from the [ce3.g8 template](https://github.com/typelevel/ce3.g8).
+An example cats-effect application built from the [ce3.g8 template](https://github.com/typelevel/ce3.g8).
 
 ## Configure the application
 
@@ -20,38 +20,50 @@ The project includes following playground runners
 
 Streams (fs2) muliple JSON files, parses and combine them.
 
-> fs2 (Files, Stream), Monoid
+> Using 
+> - fs2 (Files, Stream)
+> - Monoid
 
 #### CsvToJsonRunner
 
 Streams (fs2) multiple CSV files, parses them and write into multiple JSON files.
 
-> fs2 (Files, Stream)
+> Using 
+> - fs2 (Files, Stream)
+> - Monoid
 
 #### EvalRunner
 
 Runs Evals as Fibers.
 
-> Eval, Fiber (Concurrent.start, Fiber.join)
+> Using 
+> - Eval
+> - Fiber (join)
+> - OptionT
 
 #### ForkRunner
 
 Forks multiple Fibers, with artificial wait time, and shares atomic state across all of them.
 
-> Ref, Temporal (sleep), Fiber (Concurrent.start)
+> Using
+> - Ref
+> - Temporal
+> - Fiber
 
 #### GenerateCsvRunner
 
 Generates multiple CSV files and simulates errors.
 
-> Parallel (parTraverse)
+> Using
+> - Parallel (parTraverse)
 
 
 #### PiMCRunner
 
 Simulates Pi from Monte-Carlo method concurrently.
 
-> Parallel (parTraverse)
+> Using
+> - Parallel (parTraverse)
 
 
 ## Licence

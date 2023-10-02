@@ -18,10 +18,14 @@ object Main extends IOApp {
 
   def run(args: List[String]): IO[ExitCode] = {
     val runnerT: EitherT[IO, Throwable, Runner[IO, _]] = EitherT(for {
+
       cfg <- AppConfig.make[IO]
       console = Console.make[IO]
+
       _ <- Screen.cyan(s"Running mode: ${cfg.runMode}")(console)
+
     } yield cfg.runMode match {
+
       case "generate-csv" =>
         val runParams: Option[GenerateCsv] = cfg.runParams.collect {
           case p: GenerateCsv => p
@@ -61,6 +65,12 @@ object Main extends IOApp {
           case p: ForkParams => p
         }.headOption
         ForkRunner.make[IO](runParams).asRight
+
+      case "race-runner" =>
+        implicit val runParams: Option[RaceParams] = cfg.runParams.collect {
+          case p: RaceParams => p
+        }.headOption
+        RaceRunner.make[IO](runParams).asRight
 
       case _ =>
         new UnsupportedOperationException(
