@@ -78,4 +78,4 @@ Generates racing conditions of multiple threads which can also throw exceptions.
 
 ## Licence
 
-TBD
+MIT
