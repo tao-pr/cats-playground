@@ -72,6 +72,13 @@ object Main extends IOApp {
         }.headOption
         RaceRunner.make[IO](runParams).asRight
 
+      case "semaphore-runner" =>
+        implicit val runParams: Option[SemaphoreParams] =
+          cfg.runParams.collect { case p: SemaphoreParams =>
+            p
+          }.headOption
+        SemaphoreRunner.make[IO](runParams).asRight
+
       case _ =>
         new UnsupportedOperationException(
           s"Unknown runner type: ${cfg.runMode}"

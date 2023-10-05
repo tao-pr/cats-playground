@@ -75,6 +75,13 @@ Generates racing conditions of multiple threads which can also throw exceptions.
 > - Temporal
 > - Concurrent (racePair)
 
+#### SemaphoreRunner
+
+Resource capacity limit - This runner runs concurrent tasks with resource access restriction.
+
+> Using
+> - ???
+
 
 ## Licence
 

@@ -37,6 +37,8 @@ case class ForkParams(N: Int, M: Int, probBlocking: Double, probRecursive: Doubl
 
 case class RaceParams(N: Int, failRate: Double, timeout: Int) extends RunParams
 
+case class SemaphoreParams(maxShared: Int) extends RunParams
+
 case class AppConfig(
     runMode: String,
     runParams: List[_ <: RunParams],
