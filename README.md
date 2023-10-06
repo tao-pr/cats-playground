@@ -77,10 +77,12 @@ Generates racing conditions of multiple threads which can also throw exceptions.
 
 #### SemaphoreRunner
 
-Resource capacity limit - This runner runs concurrent tasks with resource access restriction.
+Endlessly runs scheduler which only runs an execution when resources are available (permitted).
 
 > Using
-> - ???
+> - Semaphore
+> - Ref
+> - Stream (awakeEvery)
 
 
 ## Licence

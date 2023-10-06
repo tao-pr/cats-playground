@@ -14,7 +14,7 @@ import fs2.Stream
 
 import scala.concurrent.duration._
 
-class ResourcePool[F[_]: Async: Console: Temporal](semaphore: Semaphore[F]) {
+class ResourcePool[F[_]: Async: Console](semaphore: Semaphore[F]) {
 
   def use(n: Int, i: Int, maxShared: Int): F[Unit] = {
 
@@ -79,7 +79,7 @@ sealed abstract class SemaphoreRunner[F[_]: Async: Temporal](implicit
 }
 
 object SemaphoreRunner {
-  def make[F[_]: Async: Console: Temporal](config: Option[SemaphoreParams]) =
+  def make[F[_]: Async: Console](config: Option[SemaphoreParams]) =
     new SemaphoreRunner[F] {
       override val runParams = None
       override val maxShared: Int = config.map(_.maxShared).getOrElse(2)
