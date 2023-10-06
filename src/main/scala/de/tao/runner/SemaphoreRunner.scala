@@ -16,20 +16,27 @@ import scala.concurrent.duration._
 
 class ResourcePool[F[_]: Async: Console: Temporal](semaphore: Semaphore[F]) {
 
-  def use(n: Int, i: Int): F[Unit] = {
-    for {
-      _ <- Screen.println(s"Thread ${i} requesting Semaphore (${n} blocks)")
-      acquired <- semaphore.tryAcquireN(n)
+  def use(n: Int, i: Int, maxShared: Int): F[Unit] = {
 
-      // Use acquired resource and release
+    for {
+      _ <- Screen.println(s"Thread ${i} requesting Semaphore (${n} permits)")
+      acquired <- semaphore.tryAcquireN(n)
+      avail <- semaphore.available
+
+      // Use acquired permit and release
       _ <-
         if (acquired) {
-          Screen.green(s"Thread ${i} acquiring Semaphore (${n})") *>
-            Temporal[F].sleep(250.milli) *>
-            semaphore.release *>
-            Screen.cyan(s"Thread ${i} releasing Semaphore (${n})") *>
+          Screen.green(
+            s"Thread ${i} acquiring Semaphore (${n} permits) ${avail} left available"
+          ) *>
             Monad[F].unit
-        } else Monad[F].unit
+        } else {
+          // If no permits available, just randomly release permit
+          val free = 1 + (scala.util.Random.nextInt() % maxShared).abs.toInt
+          semaphore.releaseN(free) *> Screen.cyan(
+            s"Releasing ${free} permits"
+          ) *> Monad[F].unit
+        }
 
     } yield ()
   }
@@ -46,12 +53,16 @@ sealed abstract class SemaphoreRunner[F[_]: Async: Temporal](implicit
     for {
       semaphore <- Semaphore[F](maxShared)
       pool = new ResourcePool[F](semaphore)
+      _ <- Screen.println(
+        s"Initialising Semaphore with max resource capacity = ${maxShared}"
+      )
       counter <- Ref.of[F, Int](0)
-    } yield Stream
-      .awakeEvery(500.millis)
-      .evalMap(_ => spawn(pool, counter))
-      .compile
-      .drain
+      _ <- Stream
+        .awakeEvery(600.millis)
+        .evalMap(_ => spawn(pool, counter))
+        .compile
+        .drain
+    } yield ()
   }
 
   def spawn(pool: ResourcePool[F], counter: Ref[F, Int]): F[Unit] = {
@@ -61,7 +72,7 @@ sealed abstract class SemaphoreRunner[F[_]: Async: Temporal](implicit
     for {
       c <- counter.updateAndGet(_ + 1)
       _ <- Screen.println(s"Spawning thread ${c}")
-      _ <- pool.use(size, c)
+      _ <- pool.use(size, c, maxShared)
     } yield ()
   }
 
