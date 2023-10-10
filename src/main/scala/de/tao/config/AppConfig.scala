@@ -39,6 +39,8 @@ case class RaceParams(N: Int, failRate: Double, timeout: Int) extends RunParams
 
 case class SemaphoreParams(maxShared: Int) extends RunParams
 
+case class AttemptParams(successRate: Double, hardFailRate: Double, n: Int) extends RunParams
+
 case class AppConfig(
     runMode: String,
     runParams: List[_ <: RunParams],
