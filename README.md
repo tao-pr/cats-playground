@@ -84,6 +84,15 @@ Endlessly runs scheduler which only runs an execution when resources are availab
 > - Ref
 > - Stream (awakeEvery)
 
+#### AttemptRunner
+
+Runs chains of operations which transforms data with functional error handling.
+
+> Using
+> - Ior
+> - Validated
+> - ??? 
+
 
 ## Licence
 
