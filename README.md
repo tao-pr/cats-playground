@@ -91,7 +91,8 @@ Runs chains of operations which transforms data with functional error handling.
 > Using
 > - Ior
 > - Validated
-> - ??? 
+> - Monoid (combineAll)
+> - Parallel (parTraverse)
 
 
 ## Licence

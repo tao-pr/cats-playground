@@ -12,29 +12,56 @@ import cats.data.Ior.Both
 import cats.MonadThrow
 import cats.ApplicativeError
 import cats.Applicative
-import cats.Show
+import cats.kernel.Monoid
+import cats.Parallel
+import cats.data.Validated.Valid
 
 // Types of generated data point (which can be invalid)
-case class Point(x: Double, y: Double, z: Double)
-trait Invalid { val why: String }
-case object OutOfBound extends Invalid { override val why = "out of bound" }
-case class InvalidE(override val why: String) extends Invalid
+case class Point(x: Double, y: Double, z: Double) {
+  def ++(that: Point): Point = Point(
+    x + that.x,
+    y + that.y,
+    z + that.z
+  )
 
-// taotodo: contravariant which maps [Invalid Ior Point] to ???
+  def /(scale: Int): Point = Point(
+    x / scale.toDouble,
+    y / scale.toDouble,
+    z / scale.toDouble
+  )
+}
+trait NoValue { val why: String }
+case object OutOfBound extends NoValue { override val why = "out of bound" }
+case class InvalidE(override val why: String) extends NoValue
+case object JustInvalid extends NoValue { override val why = "just invalid" }
+
 object Mapper {
   def toValidated[E, B](
-      fe: Invalid => E,
+      fe: NoValue => E,
       fv: Point => B
-  )(ior: Invalid Ior Point): Validated[E, B] = (ior match {
+  )(ior: NoValue Ior Point): Validated[E, B] = (ior match {
     case Ior.Left(a)  => fe(a).leftIor
     case Ior.Right(b) => fv(b).rightIor
     case Both(a, b)   => Ior.Both(fe(a), fv(b))
   }).toValidated
-
-  // def toAE[E, B](ior: Invalid Ior Point, fe: Invalid => E, fv: Point => B): ApplicativeError = ??? // taotodo
 }
 
-abstract sealed class AttemptRunner[F[_]: Sync](implicit
+object Point {
+  implicit val monoid: Monoid[Validated[NoValue, Point]] =
+    new Monoid[Validated[NoValue, Point]] {
+      def empty: Validated[NoValue, Point] = Validated.invalid(JustInvalid)
+      def combine(
+          x: Validated[NoValue, Point],
+          y: Validated[NoValue, Point]
+      ): Validated[NoValue, Point] = (x, y) match {
+        case (Validated.Invalid(_), a)                => a
+        case (a, Validated.Invalid(_))                => a
+        case (Validated.Valid(a), Validated.Valid(b)) => Validated.Valid(a ++ b)
+      }
+    }
+}
+
+abstract sealed class AttemptRunner[F[_]: Sync: Parallel](implicit
     console: Console[F]
 ) extends Runner[F, List[Double]] {
 
@@ -44,15 +71,6 @@ abstract sealed class AttemptRunner[F[_]: Sync](implicit
   val successRate: Double
   val hardFailRate: Double
   val N: Int
-
-  // taotodo:
-
-  // ApplicativeError.raiseUnless()
-  // MonadThrow, ApplicativeError, Validated
-  // Kleisli -> KleisliT
-  // Contravariant -> using F[A].contramap(A -> B) so we can make context F[B]
-
-  // Either.cond()
 
   override def run: F[List[Double]] = {
     for {
@@ -73,8 +91,12 @@ abstract sealed class AttemptRunner[F[_]: Sync](implicit
       numValid = validated.count(_.isValid)
       _ <- Screen.println(s"... ${numValid} valid data points")
 
-      // Contramap and handle errors
-      // taotodo
+      // concurrently combine all valid points (Monoidic)
+      combined <- validated.parTraverse(v => Sync[F].delay(v)).map(_.combineAll)
+      _ <- combined match {
+        case Validated.Invalid(e) => Screen.red(s"Failed to combine: $e")
+        case Valid(a)             => Screen.cyan(s"Mean point: ${a / numValid}")
+      }
 
     } yield (Nil)
   }
@@ -83,7 +105,7 @@ abstract sealed class AttemptRunner[F[_]: Sync](implicit
 
   /** Generate 3D point which can fail or with warning
     */
-  def genPoint(): F[Invalid Ior Point] = Sync[F].delay {
+  def genPoint(): F[NoValue Ior Point] = Sync[F].delay {
     if (genDouble < successRate) {
       Point(genDouble, genDouble, genDouble).rightIor
     } else if (genDouble < hardFailRate) {
@@ -98,7 +120,7 @@ abstract sealed class AttemptRunner[F[_]: Sync](implicit
 }
 
 object AttemptRunner {
-  def make[F[_]: Sync](
+  def make[F[_]: Sync: Parallel](
       _params: Option[AttemptParams]
   )(implicit console: Console[F]): AttemptRunner[F] =
     new AttemptRunner[F] {
