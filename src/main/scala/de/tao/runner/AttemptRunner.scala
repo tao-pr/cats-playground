@@ -63,7 +63,7 @@ object Point {
 
 abstract sealed class AttemptRunner[F[_]: Sync: Parallel](implicit
     console: Console[F]
-) extends Runner[F, List[Double]] {
+) extends Runner[F, Either[NoValue, Point]] {
 
   override val runParams = None
 
@@ -72,7 +72,7 @@ abstract sealed class AttemptRunner[F[_]: Sync: Parallel](implicit
   val hardFailRate: Double
   val N: Int
 
-  override def run: F[List[Double]] = {
+  override def run: F[Either[NoValue, Point]] = {
     for {
       _ <- Screen.green(s"Generating ${N} data points")
 
@@ -93,12 +93,17 @@ abstract sealed class AttemptRunner[F[_]: Sync: Parallel](implicit
 
       // concurrently combine all valid points (Monoidic)
       combined <- validated.parTraverse(v => Sync[F].delay(v)).map(_.combineAll)
-      _ <- combined match {
-        case Validated.Invalid(e) => Screen.red(s"Failed to combine: $e")
-        case Valid(a)             => Screen.cyan(s"Mean point: ${a / numValid}")
+      mean <- combined match {
+        case Validated.Invalid(e) =>
+          Screen.red(s"Failed to combine: $e") *> Sync[F].delay(e.asLeft[Point])
+          
+        case Valid(a) =>
+          Screen.cyan(s"Mean point: ${a / numValid}") *> Sync[F].delay(
+            (a / numValid).asRight[NoValue]
+          )
       }
 
-    } yield (Nil)
+    } yield (mean)
   }
 
   def genDouble: Double = scala.util.Random.nextDouble()
