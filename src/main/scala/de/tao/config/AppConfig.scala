@@ -41,6 +41,8 @@ case class SemaphoreParams(maxShared: Int) extends RunParams
 
 case class AttemptParams(successRate: Double, hardFailRate: Double, n: Int) extends RunParams
 
+case class IOBoundParams(dir: String, nThreads: Int, timeout: Int) extends RunParams
+
 case class AppConfig(
     runMode: String,
     runParams: List[_ <: RunParams],
