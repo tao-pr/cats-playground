@@ -1,5 +1,8 @@
 package de.tao.common
 
+import de.tao.common.DataTypes._
+import de.tao.common._
+
 import io.circe.{Encoder, Decoder}
 import io.circe.syntax._
 import io.circe.generic.semiauto._
@@ -10,7 +13,7 @@ object DataTypes {
   case class SampleCsv(uuid: String, a: Double, b: Double, c: Double, d: Double)
 
   // Unsafe codec
-  implicit val sampleCsvCodec = new CsvCodec[SampleCsv] {
+  implicit val sampleCsvCodec: CsvCodec[SampleCsv]= new CsvCodec[SampleCsv] {
 
     override val parser: List[String] => SampleCsv = { ns =>
       val uuid = ns.head
@@ -24,7 +27,7 @@ object DataTypes {
     }
   }
 
-  implicit val sampleJsonCodec = new JsonCodec[SampleCsv] {
+  implicit val sampleJsonCodec: JsonCodec[SampleCsv]= new JsonCodec[SampleCsv] {
     override implicit val jsonEncoder: Encoder[SampleCsv] =
       deriveCodec[SampleCsv]
     override implicit val jsonDecoder: Decoder[SampleCsv] =
