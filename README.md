@@ -29,6 +29,10 @@ The project includes following playground runners
 |AttemptRunner | Runs chains of operations which transforms data with functional error handling | <ul><li>Ior</li><li>Validated</li><li>Monoid (combineAll)</li><li>Parallel (parTraverse)</li></ul> |
 
 
+## Good resources for cats-effects / cats-io / fs2
+
+- [Full API documentation](https://www.javadoc.io/doc/org.typelevel/cats-effect_3/latest/cats/effect.html)
+- [Why Fibers are fast](https://typelevel.org/blog/2021/02/21/fibers-fast-mkay.html)
 
 ## Licence
 

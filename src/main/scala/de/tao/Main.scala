@@ -84,6 +84,11 @@ object Main extends IOApp {
           cfg.runParams.collect { case p: AttemptParams => p }.headOption
         AttemptRunner.make[IO](runParams).asRight
 
+      case "io-bound-runner" =>
+        implicit val runParams: Option[IOBoundParams] =
+          cfg.runParams.collect { case p: IOBoundParams => p }.headOption
+        IOBoundRunner.make[IO](runParams).asRight
+
       case _ =>
         new UnsupportedOperationException(
           s"Unknown runner type: ${cfg.runMode}"
