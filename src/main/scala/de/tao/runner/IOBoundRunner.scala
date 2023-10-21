@@ -7,16 +7,19 @@ import de.tao.common.Disk._
 import cats.effect.std.Console
 import cats.effect._
 import cats.syntax.all._
+import cats.effect.kernel.Temporal
 import cats.Parallel
-import scala.annotation.tailrec
 
 import fs2.{Stream, io, text}
 
 import java.nio.file.{StandardOpenOption, Paths, Files => nioFiles}
-import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.LocalDateTime
+import scala.concurrent.duration._
+import scala.annotation.tailrec
 
 abstract sealed class IOBoundRunner[F[_]: Parallel: Async](
-  override val runParams: Option[IOBoundParams]
+    override val runParams: Option[IOBoundParams]
 )(implicit
     console: Console[F]
 ) extends Runner[F, Any] {
@@ -55,6 +58,10 @@ abstract sealed class IOBoundRunner[F[_]: Parallel: Async](
         scala.util.Random.nextBytes(1).head
       )
       seq <- Sync[F].delay(genSeqUntilDesc(Seq(a, b), (a, b)))
+      dt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME)
+      _ <- Screen.println(
+        s"$dt: Thread #$n generated sequence of length ${seq.length}"
+      )
     } yield (seq)
 
     // Task #2
@@ -62,20 +69,25 @@ abstract sealed class IOBoundRunner[F[_]: Parallel: Async](
     val writeFile = for {
       _ <- Screen.println(s"Writing timestamp (#${n}) to ${dir}")
       filepath = Paths.get(dir).resolve(Paths.get(s"ts-$n.txt"))
-      dt = LocalDate.now().toString()
 
       // Make sure dir exists
       isCreated <- makeDirExist(dir)
 
-      // write timestamp to file
+      // write timestamp & generated content to file
       // using Sync[F].blocking to shift the operation
       // into another threadpool to avoid blocking the main thread
-      _ <- Sync[F].blocking(nioFiles.write(filepath, dt.getBytes))
+      dt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_TIME)
+      _ <- Temporal[F].sleep(200.millis) >> Sync[F].blocking(
+        nioFiles.write(filepath, dt.getBytes)
+      )
 
     } yield ()
 
     // Now run these 2 tasks (take only result from task #1)
-    writeFile >> genSeq
+    // writeFile >> genSeq
+    (writeFile, genSeq).parMapN { case (_, seq) =>
+      seq
+    }
   }
 
   @tailrec
@@ -95,5 +107,5 @@ object IOBoundRunner {
   def make[F[_]: Console: Parallel: Async](
       params: Option[IOBoundParams]
   ): IOBoundRunner[F] =
-    new IOBoundRunner[F](params){}
+    new IOBoundRunner[F](params) {}
 }
