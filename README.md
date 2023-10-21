@@ -27,6 +27,7 @@ The project includes following playground runners
 |RaceRunner | Generates racing conditions of multiple threads which can also throw exceptions | <ul><li>Fiber</li><li>ApplicativeError (via F.raiseError)</li><li>Temporal</li><li>Concurrent (racePair)</li></ul> |
 |SemaphoreRunner | Endlessly runs scheduler which only runs an execution when resources are available (and permitted)| <ul><li>Semaphore</li><li>Ref</li><li>Stream (awakeEvery)</li></ul>|
 |AttemptRunner | Runs chains of operations which transforms data with functional error handling | <ul><li>Ior</li><li>Validated</li><li>Monoid (combineAll)</li><li>Parallel (parTraverse)</li></ul> |
+|IOBoundRunner | Runs IO-blocking task and CPU-bound task in parallel | <ul><li>Parallel (parTraverse)</li><li>Temporal (sleep)</li><li>Sync (blocking)</li><li>parMapN</li></ul> |
 
 
 ## Good resources for cats-effects / cats-io / fs2
