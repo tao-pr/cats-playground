@@ -94,7 +94,7 @@ abstract sealed class IOBoundRunner[F[_]: Parallel: Async](
   def genSeqUntilDesc(ns: Seq[Byte], lastTwo: (Byte, Byte)): Seq[Byte] = {
     val (a, b) = lastTwo
     val c = scala.util.Random.nextBytes(1).head
-    if (ns.length >= maxSeqLen - 1 || (a > b && b > c))
+    if (ns.length >= maxSeqLen - 1 || !(a > b && b > c))
       ns.appended(c)
     else {
       genSeqUntilDesc(ns.appended(c), (b, c))
